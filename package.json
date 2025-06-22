@@ -1,5 +1,10 @@
 {
-  "name": "my-v0-project",
+  "name": "eventora-app",
+  "author": {
+    "name": "Pulok Chowdhury",
+    "email": "riopulok@gmail.com",
+    "url": "https://pulokchowdhury.vercel.app/"
+  },
   "version": "0.1.0",
   "private": true,
   "scripts": {
