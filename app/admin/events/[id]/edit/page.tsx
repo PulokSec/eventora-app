@@ -15,6 +15,7 @@ import Link from "next/link"
 import { ImageUpload } from "@/components/image-upload"
 import { useToast } from "@/hooks/use-toast"
 import { Eye, BarChart3 } from "lucide-react" // Import Eye and BarChart3
+import { useAuth } from "@/lib/auth-context"
 
 interface EventData {
   _id: string
@@ -62,6 +63,19 @@ export default function AdminEditEventPage() {
     status: "",
     createdBy: "",
   })
+
+const {user} = useAuth()
+
+  useEffect(() => {
+    if(!user){
+      router.push("/auth/login")
+      return
+    }
+    if(user?.role === 'user'){
+      router.push("/user/dashboard")
+    }
+  }, [user])
+
 
   useEffect(() => {
     if (params.id) {

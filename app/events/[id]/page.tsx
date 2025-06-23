@@ -1,13 +1,14 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Calendar, MapPin, Clock, User, Heart, ArrowLeft, Users } from "lucide-react"
 import Link from "next/link"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/lib/auth-context"
 
 interface EventDetails {
   _id: string
@@ -34,6 +35,16 @@ export default function EventDetailsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSubscribing, setIsSubscribing] = useState(false)
   const [isSubscribed, setIsSubscribed] = useState(false)
+  const router = useRouter()
+
+  const {user} = useAuth()
+  
+    useEffect(() => {
+      if(!user){
+        router.push("/auth/login")
+        return
+      }
+    }, [user])
 
   useEffect(() => {
     if (params.id) {
@@ -48,7 +59,6 @@ export default function EventDetailsPage() {
 
       if (data.success) {
         setEvent(data.event)
-        // TODO: Check if user is subscribed to this event
       } else {
         toast({
           title: "Error",

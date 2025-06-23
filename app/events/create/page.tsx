@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -14,6 +14,7 @@ import Link from "next/link"
 import { ImageUpload } from "@/components/image-upload"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { useAuth } from "@/lib/auth-context"
 
 export default function CreateEventPage() {
   const [isLoading, setIsLoading] = useState(false)
@@ -24,7 +25,15 @@ export default function CreateEventPage() {
   const [time, setTime] = useState("")
   const [location, setLocation] = useState("")
   const [category, setCategory] = useState("")
-  const router = useRouter()
+  const {user} = useAuth()
+    const router = useRouter()
+  
+    useEffect(() => {
+      if(!user){
+        router.push("/auth/login")
+        return
+      }
+    }, [user])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
