@@ -7,6 +7,7 @@ import { Plus } from "lucide-react"
 import Link from "next/link"
 
 interface Event {
+  _id: string
   id: string
   title: string
   description: string
@@ -28,7 +29,7 @@ export function EventsGrid() {
         const res = await fetch("/api/events")
         if (!res.ok) throw new Error("Failed to fetch events")
       const data = await res.json()
-      setEvents(Array.isArray(data) ? data : [])
+      setEvents(Array.isArray(data?.events) ? data?.events : [])
       } catch (error) {
         console.error("Failed to fetch events:", error)
       } finally {
@@ -48,11 +49,8 @@ export function EventsGrid() {
       if (!res.ok) throw new Error("Failed to toggle subscription")
 
       // Optionally, get updated event from response
-      // const updatedEvent = await res.json()
-      // setEvents(events.map((event) => (event.id === eventId ? updatedEvent : event)))
-
-      // Or just toggle locally
-      setEvents(events.map((event) => (event.id === eventId ? { ...event, isSubscribed: !event.isSubscribed } : event)))
+      const updatedEvent = await res.json()
+      setEvents(events.map((event) => (event.id === eventId ? updatedEvent : event)))
     } catch (error) {
       console.error("Failed to toggle subscription:", error)
     }
@@ -90,7 +88,7 @@ export function EventsGrid() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {Array.isArray(events) && events?.map((event) => (
-          <EventCard key={event.id} event={event} onSubscribe={() => handleSubscribe(event.id)} />
+          <EventCard key={event._id} event={event} onSubscribe={() => handleSubscribe(event._id)} />
         ))}
       </div>
     </div>

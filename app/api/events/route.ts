@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, message: error || "Authentication required" }, { status: 401 })
     }
 
-    const { title, description, date, time, location, category, banner } = await request.json()
+    const { title, description, date, time, location, category, bannerUrl } = await request.json()
 
     // Validation
     if (!title || !description || !date || !time || !location || !category) {
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
       location,
       category,
       status: user.role === "admin" ? "active" : "pending",
-      banner,
+      banner: bannerUrl,
       createdBy: new ObjectId(user._id!),
       createdAt: new Date(),
       updatedAt: new Date(),

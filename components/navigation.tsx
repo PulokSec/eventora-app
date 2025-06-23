@@ -37,7 +37,7 @@ console.log(user);
             <div className="w-8 h-8 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg flex items-center justify-center">
               <Calendar className="w-5 h-5 text-white" />
             </div>
-            <span className="text-xl font-bold text-slate-900">EventHub</span>
+            <span className="text-xl font-bold text-slate-900">Eventora</span>
           </Link>
 
           <div className="flex items-center gap-4">
@@ -73,10 +73,19 @@ console.log(user);
                   </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link href="/profile" className="cursor-pointer">
+                    {
+                      user?.role === "admin" ? (
+                        <Link href="/admin/dashboard" className="cursor-pointer">
+                      <User className="mr-2 h-4 w-4" />
+                      Dashboard
+                    </Link>
+                      ) : (
+                        <Link href="/profile" className="cursor-pointer">
                       <User className="mr-2 h-4 w-4" />
                       Profile
                     </Link>
+                      )
+                    }
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600">

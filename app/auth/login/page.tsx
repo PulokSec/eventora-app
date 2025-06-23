@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Eye, EyeOff, Calendar } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/lib/auth-context"
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -19,6 +20,18 @@ export default function LoginPage() {
   const [errorMsg, setErrorMsg] = useState("")
   const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter()
+  const {user} = useAuth()
+  
+    useEffect(() => {
+      if(user?.role){
+      if(user?.role === 'admin'){
+        router.push("/admin/dashboard")
+      }
+      else{
+        router.push("/user/dashboard")
+      }
+    }
+    }, [user])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()

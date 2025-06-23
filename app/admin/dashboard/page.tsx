@@ -9,6 +9,8 @@ import { AdminEventsList } from "@/components/admin/admin-events-list"
 import { UserManagement } from "@/components/admin/user-management"
 import { AdminStats } from "@/components/admin/admin-stats"
 import Link from "next/link"
+import { useAuth } from "@/lib/auth-context"
+import { useRouter } from "next/navigation"
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -17,6 +19,20 @@ export default function AdminDashboard() {
     activeEvents: 0,
     totalSubscriptions: 0,
   })
+  const {user} = useAuth()
+  const router = useRouter()
+
+  useEffect(() => {
+    if(!user){
+      router.push("/auth/login")
+      return
+    }
+    if(user?.role === 'user'){
+      router.push("/user/dashboard")
+    }
+  }, [user])
+  
+
 
   useEffect(() => {
     // Fetch admin stats
@@ -121,7 +137,7 @@ export default function AdminDashboard() {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="events" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 lg:w-[400px]">
+          <TabsList className="grid w-full grid-cols-3 gap-4">
             <TabsTrigger value="events">Events Management</TabsTrigger>
             <TabsTrigger value="users">User Management</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>

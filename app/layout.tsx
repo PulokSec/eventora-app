@@ -8,7 +8,7 @@ import { AuthProvider } from "@/lib/auth-context"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "EventHub - Modern Event Management",
+  title: "Eventora - Modern Event Management",
   description: "Discover, create, and manage amazing events",
 }
 

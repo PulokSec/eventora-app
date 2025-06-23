@@ -1,7 +1,6 @@
 "use client"
 
 import { Calendar } from "@/components/ui/calendar"
-
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -13,6 +12,7 @@ import { Eye, Edit, Trash2, Search, Filter, MoreHorizontal, CheckCircle, XCircle
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 interface Event {
+  _id: string
   id: string
   title: string
   creator: string
@@ -32,61 +32,24 @@ export function AdminEventsList() {
 
   useEffect(() => {
     fetchEvents()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
     filterEvents()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [events, searchQuery, statusFilter])
 
   const fetchEvents = async () => {
+    setIsLoading(true)
     try {
-      // Dummy data for admin events list
-      const dummyEvents: Event[] = [
-        {
-          id: "1",
-          title: "Tech Conference 2024",
-          creator: "John Doe",
-          creatorEmail: "john@example.com",
-          date: "2024-03-15",
-          status: "active",
-          subscribers: 45,
-          category: "technology",
-        },
-        {
-          id: "2",
-          title: "Art Gallery Opening",
-          creator: "Jane Smith",
-          creatorEmail: "jane@example.com",
-          date: "2024-03-20",
-          status: "pending",
-          subscribers: 23,
-          category: "arts",
-        },
-        {
-          id: "3",
-          title: "Business Networking",
-          creator: "Mike Johnson",
-          creatorEmail: "mike@example.com",
-          date: "2024-02-10",
-          status: "completed",
-          subscribers: 67,
-          category: "business",
-        },
-        {
-          id: "4",
-          title: "Music Festival",
-          creator: "Sarah Wilson",
-          creatorEmail: "sarah@example.com",
-          date: "2024-04-01",
-          status: "cancelled",
-          subscribers: 12,
-          category: "music",
-        },
-      ]
-
-      setEvents(dummyEvents)
+      const res = await fetch("/api/admin/events")
+      if (!res.ok) throw new Error("Failed to fetch events")
+      const data = await res.json()
+      setEvents(data.events || [])
     } catch (error) {
       console.error("Failed to fetch events:", error)
+      setEvents([])
     } finally {
       setIsLoading(false)
     }
@@ -112,13 +75,14 @@ export function AdminEventsList() {
 
   const updateEventStatus = async (eventId: string, newStatus: Event["status"]) => {
     try {
-      await fetch(`/api/admin/events/${eventId}/status`, {
+      const res = await fetch(`/api/admin/events/${eventId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
       })
-
+      if (!res.ok) throw new Error("Failed to update event status")
       setEvents(events.map((event) => (event.id === eventId ? { ...event, status: newStatus } : event)))
+    filterEvents()
     } catch (error) {
       console.error("Failed to update event status:", error)
     }
@@ -126,11 +90,12 @@ export function AdminEventsList() {
 
   const deleteEvent = async (eventId: string) => {
     try {
-      await fetch(`/api/admin/events/${eventId}`, {
+      const res = await fetch(`/api/admin/events/${eventId}`, {
         method: "DELETE",
       })
-
+      if (!res.ok) throw new Error("Failed to delete event")
       setEvents(events.filter((event) => event.id !== eventId))
+      filterEvents()
     } catch (error) {
       console.error("Failed to delete event:", error)
     }
@@ -220,7 +185,7 @@ export function AdminEventsList() {
             </TableHeader>
             <TableBody>
               {filteredEvents.map((event) => (
-                <TableRow key={event.id}>
+                <TableRow key={event._id}>
                   <TableCell>
                     <div>
                       <div className="font-medium">{event.title}</div>
@@ -252,15 +217,15 @@ export function AdminEventsList() {
                           <Edit className="mr-2 h-4 w-4" />
                           Edit Event
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => updateEventStatus(event.id, "active")}>
+                        <DropdownMenuItem onClick={() => updateEventStatus(event._id, "active")}>
                           <CheckCircle className="mr-2 h-4 w-4" />
                           Mark Active
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => updateEventStatus(event.id, "cancelled")}>
+                        <DropdownMenuItem onClick={() => updateEventStatus(event._id, "cancelled")}>
                           <XCircle className="mr-2 h-4 w-4" />
                           Cancel Event
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => deleteEvent(event.id)} className="text-red-600">
+                        <DropdownMenuItem onClick={() => deleteEvent(event._id)} className="text-red-600">
                           <Trash2 className="mr-2 h-4 w-4" />
                           Delete Event
                         </DropdownMenuItem>

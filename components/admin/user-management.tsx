@@ -11,6 +11,7 @@ import { Search, MoreHorizontal, UserCheck, UserX, Shield } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 interface AdminUser {
+  _id: string
   id: string
   name: string
   email: string
@@ -18,7 +19,7 @@ interface AdminUser {
   status: "active" | "suspended"
   eventsCreated: number
   eventsSubscribed: number
-  joinedDate: string
+  createdAt: string
   avatar?: string
 }
 
@@ -30,65 +31,24 @@ export function UserManagement() {
 
   useEffect(() => {
     fetchUsers()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
     filterUsers()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [users, searchQuery])
 
   const fetchUsers = async () => {
+    setIsLoading(true)
     try {
-      // Dummy data for users
-      const dummyUsers: AdminUser[] = [
-        {
-          id: "1",
-          name: "John Doe",
-          email: "john@example.com",
-          role: "admin",
-          status: "active",
-          eventsCreated: 5,
-          eventsSubscribed: 12,
-          joinedDate: "2023-01-15",
-          avatar: "/placeholder.svg?height=40&width=40",
-        },
-        {
-          id: "2",
-          name: "Jane Smith",
-          email: "jane@example.com",
-          role: "user",
-          status: "active",
-          eventsCreated: 3,
-          eventsSubscribed: 8,
-          joinedDate: "2023-02-20",
-          avatar: "/placeholder.svg?height=40&width=40",
-        },
-        {
-          id: "3",
-          name: "Mike Johnson",
-          email: "mike@example.com",
-          role: "user",
-          status: "active",
-          eventsCreated: 7,
-          eventsSubscribed: 15,
-          joinedDate: "2023-03-10",
-          avatar: "/placeholder.svg?height=40&width=40",
-        },
-        {
-          id: "4",
-          name: "Sarah Wilson",
-          email: "sarah@example.com",
-          role: "user",
-          status: "suspended",
-          eventsCreated: 1,
-          eventsSubscribed: 3,
-          joinedDate: "2023-04-05",
-          avatar: "/placeholder.svg?height=40&width=40",
-        },
-      ]
-
-      setUsers(dummyUsers)
+      const res = await fetch("/api/admin/users")
+      if (!res.ok) throw new Error("Failed to fetch users")
+      const data = await res.json()
+      setUsers(data?.users)
     } catch (error) {
       console.error("Failed to fetch users:", error)
+      setUsers([])
     } finally {
       setIsLoading(false)
     }
@@ -110,13 +70,14 @@ export function UserManagement() {
 
   const updateUserStatus = async (userId: string, newStatus: AdminUser["status"]) => {
     try {
-      await fetch(`/api/admin/users/${userId}/status`, {
+      const res = await fetch(`/api/admin/users/${userId}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
       })
-
+      if (!res.ok) throw new Error("Failed to update user status")
       setUsers(users.map((user) => (user.id === userId ? { ...user, status: newStatus } : user)))
+      filterUsers()
     } catch (error) {
       console.error("Failed to update user status:", error)
     }
@@ -124,13 +85,14 @@ export function UserManagement() {
 
   const updateUserRole = async (userId: string, newRole: AdminUser["role"]) => {
     try {
-      await fetch(`/api/admin/users/${userId}/role`, {
+      const res = await fetch(`/api/admin/users/${userId}/role`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ role: newRole }),
       })
-
+      if (!res.ok) throw new Error("Failed to update user role")
       setUsers(users.map((user) => (user.id === userId ? { ...user, role: newRole } : user)))
+    filterUsers()
     } catch (error) {
       console.error("Failed to update user role:", error)
     }
@@ -144,7 +106,6 @@ export function UserManagement() {
       </Badge>
     ) : (
       <Badge className="bg-blue-100 text-blue-800">
-        {/* User Icon Placeholder */}
         <div className="w-3 h-3 mr-1 bg-blue-300 rounded-full"></div>
         User
       </Badge>
@@ -181,7 +142,7 @@ export function UserManagement() {
       </Card>
     )
   }
-
+console.log(filteredUsers)
   return (
     <Card>
       <CardHeader>
@@ -217,8 +178,8 @@ export function UserManagement() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredUsers.map((user) => (
-                <TableRow key={user.id}>
+              {filteredUsers?.map((user) => (
+                <TableRow key={user?._id}>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Avatar className="h-10 w-10">
@@ -240,7 +201,7 @@ export function UserManagement() {
                   <TableCell>{getStatusBadge(user.status)}</TableCell>
                   <TableCell>{user.eventsCreated}</TableCell>
                   <TableCell>{user.eventsSubscribed}</TableCell>
-                  <TableCell>{new Date(user.joinedDate).toLocaleDateString()}</TableCell>
+                  <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -252,28 +213,27 @@ export function UserManagement() {
                         <DropdownMenuItem>View Profile</DropdownMenuItem>
                         <DropdownMenuItem>View Events</DropdownMenuItem>
                         {user.role === "user" && (
-                          <DropdownMenuItem onClick={() => updateUserRole(user.id, "admin")}>
+                          <DropdownMenuItem onClick={() => updateUserRole(user?._id, "admin")}>
                             <Shield className="mr-2 h-4 w-4" />
                             Make Admin
                           </DropdownMenuItem>
                         )}
                         {user.role === "admin" && (
-                          <DropdownMenuItem onClick={() => updateUserRole(user.id, "user")}>
-                            {/* User Icon Placeholder */}
+                          <DropdownMenuItem onClick={() => updateUserRole(user?._id, "user")}>
                             <div className="mr-2 h-4 w-4 bg-blue-300 rounded-full"></div>
                             Remove Admin
                           </DropdownMenuItem>
                         )}
                         {user.status === "active" ? (
                           <DropdownMenuItem
-                            onClick={() => updateUserStatus(user.id, "suspended")}
+                            onClick={() => updateUserStatus(user._id, "suspended")}
                             className="text-red-600"
                           >
                             <UserX className="mr-2 h-4 w-4" />
                             Suspend User
                           </DropdownMenuItem>
                         ) : (
-                          <DropdownMenuItem onClick={() => updateUserStatus(user.id, "active")}>
+                          <DropdownMenuItem onClick={() => updateUserStatus(user._id, "active")}>
                             <UserCheck className="mr-2 h-4 w-4" />
                             Activate User
                           </DropdownMenuItem>
@@ -289,7 +249,6 @@ export function UserManagement() {
 
         {filteredUsers.length === 0 && (
           <div className="text-center py-8 text-slate-500">
-            {/* User Icon Placeholder */}
             <div className="w-12 h-12 mx-auto mb-4 bg-blue-300 rounded-full"></div>
             <p>No users found matching your criteria</p>
           </div>

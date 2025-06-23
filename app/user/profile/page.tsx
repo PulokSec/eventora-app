@@ -10,6 +10,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { User, Mail, Calendar, Shield, Edit, Save, X } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { ImageUpload } from "@/components/image-upload"
+import { useAuth } from "@/lib/auth-context"
+import { useRouter } from "next/navigation"
 
 interface UserProfile {
   id: string
@@ -39,6 +41,18 @@ export default function ProfilePage() {
     avatar: "",
   })
   const { toast } = useToast()
+  const {user} = useAuth()
+    const router = useRouter()
+  
+    useEffect(() => {
+      if(!user){
+        router.push("/auth/login")
+        return
+      }
+      if(user?.role === 'admin'){
+        router.push("/admin/dashboard")
+      }
+    }, [user])
 
   useEffect(() => {
     fetchProfile()

@@ -7,6 +7,7 @@ import { Calendar, MapPin, Clock, Heart, Edit, Trash2 } from "lucide-react"
 import { useState } from "react"
 
 interface Event {
+  _id: string
   id: string
   title: string
   description: string
@@ -21,9 +22,11 @@ interface Event {
 interface EventCardProps {
   event: Event
   onSubscribe: () => void
+  onDelete?: (id: string) => void
+  onEdit?: (id: string) => void
 }
 
-export function EventCard({ event, onSubscribe }: EventCardProps) {
+export function EventCard({ event, onSubscribe, onDelete, onEdit }: EventCardProps) {
   const [isDeleting, setIsDeleting] = useState(false)
 
   const getCategoryColor = (category: string) => {
@@ -52,16 +55,20 @@ export function EventCard({ event, onSubscribe }: EventCardProps) {
   const handleDelete = async () => {
     setIsDeleting(true)
     try {
-      // Dummy API call
-      await fetch(`/api/events/${event.id}`, {
+      const res = await fetch(`/api/events/${event._id}`, {
         method: "DELETE",
       })
-      console.log("Event deleted")
+      if (!res.ok) throw new Error("Failed to delete event")
+      onDelete?.(event.id)
     } catch (error) {
       console.error("Failed to delete event:", error)
     } finally {
       setIsDeleting(false)
     }
+  }
+
+  const handleEdit = () => {
+    onEdit?.(event.id)
   }
 
   return (
@@ -78,7 +85,7 @@ export function EventCard({ event, onSubscribe }: EventCardProps) {
           </Badge>
         </div>
         <div className="absolute top-4 right-4 flex gap-2">
-          <Button size="sm" variant="secondary" className="bg-white/90 hover:bg-white">
+          <Button size="sm" variant="secondary" className="bg-white/90 hover:bg-white" onClick={handleEdit}>
             <Edit className="w-4 h-4" />
           </Button>
           <Button

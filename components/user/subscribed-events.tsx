@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Heart, Search, Calendar, MapPin, Clock, User } from "lucide-react"
 
 interface SubscribedEvent {
+  _id: string
   id: string
   title: string
   description: string
@@ -70,6 +71,7 @@ export function SubscribedEvents() {
       })
       if (!res.ok) throw new Error("Failed to unsubscribe")
       setEvents(events.filter((event) => event.id !== eventId))
+    filterEvents()
     } catch (error) {
       console.error("Failed to unsubscribe:", error)
     }
@@ -169,7 +171,7 @@ export function SubscribedEvents() {
                   </div>
 
                   <Button
-                    onClick={() => unsubscribeFromEvent(event.id)}
+                    onClick={() => unsubscribeFromEvent(event._id)}
                     variant="outline"
                     className="w-full text-red-600 border-red-200 hover:bg-red-50"
                   >

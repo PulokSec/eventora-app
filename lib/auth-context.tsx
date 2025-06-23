@@ -28,15 +28,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // First check localStorage for token
       const token = localStorage.getItem("event_auth_token")
       // Fetch current user data
-      const response = await fetch("/api/auth/me")
-
+      const response = await fetch("/api/auth/me", {
+        headers: {
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+      })
       if (!response.ok) {
         setUser(null)
         setLoading(false)
         return false
       }
-
+      
       const data = await response.json()
+      console.log(data)
       setUser(data.user)
       setLoading(false)
       return true

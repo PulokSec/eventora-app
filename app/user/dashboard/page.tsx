@@ -8,6 +8,8 @@ import { Calendar, Heart, TrendingUp, Plus, Settings } from "lucide-react"
 import { UserEventsList } from "@/components/user/user-events-list"
 import { SubscribedEvents } from "@/components/user/subscribed-events"
 import Link from "next/link"
+import { useAuth } from "@/lib/auth-context"
+import { useRouter } from "next/navigation"
 
 export default function UserDashboard() {
   const [stats, setStats] = useState({
@@ -15,6 +17,20 @@ export default function UserDashboard() {
     subscribedEvents: 0,
     upcomingEvents: 0,
   })
+
+const {user} = useAuth()
+  const router = useRouter()
+
+  useEffect(() => {
+    if(!user){
+      router.push("/auth/login")
+      return
+    }
+    if(user?.role === 'admin'){
+      router.push("/admin/dashboard")
+    }
+  }, [user])
+  
 
   useEffect(() => {
     // Fetch user stats
