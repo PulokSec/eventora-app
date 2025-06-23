@@ -8,6 +8,8 @@ type AuthContextType = {
   user: User | null
   loading: boolean
   signout: () => Promise<void>
+  signin: (email: string, password: string) => Promise<{ success: boolean; error?: string }>
+  signup: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>
   checkAuth: () => Promise<boolean>
 }
 
@@ -40,7 +42,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       
       const data = await response.json()
-      console.log(data)
       setUser(data.user)
       setLoading(false)
       return true
@@ -51,7 +52,69 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return false
     }
   }
+ // Sign in function
+  const signin = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      })
 
+      const data = await response.json()
+
+      if (!response.ok) {
+        return { success: false, error: data.error || "Failed to sign in" }
+      }
+
+      // Store token in localStorage for client-side access
+      if (data.token) {
+        localStorage.setItem("auth-token", data.token)
+      }
+
+      setUser(data.user)
+      return { success: true }
+    } catch (error) {
+      console.error("Error during signin:", error)
+      return { success: false, error: "An unexpected error occurred" }
+    }
+  }
+
+  // Sign up function
+  const signup = async (
+    name: string,
+    email: string,
+    password: string,
+  ): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name, email, password }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        return { success: false, error: data.error || "Failed to sign up" }
+      }
+
+      // Store token in localStorage for client-side access
+      if (data.token) {
+        localStorage.setItem("auth-token", data.token)
+      }
+
+      setUser(data.user)
+      return { success: true }
+    } catch (error) {
+      console.error("Error during signup:", error)
+      return { success: false, error: "An unexpected error occurred" }
+    }
+  }
 
   // Sign out function
   const signout = async (): Promise<void> => {
@@ -70,7 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, signout, checkAuth }}>
+    <AuthContext.Provider value={{ user, loading, signin, signup, signout, checkAuth }}>
       {children}
     </AuthContext.Provider>
   )

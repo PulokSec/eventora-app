@@ -17,7 +17,6 @@ import { useRouter } from "next/navigation"
 export function Navigation() {
   const router = useRouter()
 const { user,signout } = useAuth()
-console.log(user);
 
   const handleLogout = async () => {
     try {

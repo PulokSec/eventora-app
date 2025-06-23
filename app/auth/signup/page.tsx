@@ -17,18 +17,13 @@ export default function SignupPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
-  const {user} = useAuth()
+  const {user, signup} = useAuth()
     
-      useEffect(() => {
-        if(user){
-        if(user?.role === 'admin'){
-          router.push("/admin/dashboard")
-        }
-        else{
-          router.push("/user/dashboard")
-        }
-      }
-      }, [user])
+       useEffect(() => {
+    if (user?.role) {
+      router.push(user.role === 'admin' ? "/admin/dashboard" : "/user/dashboard")
+    }
+  }, [user])
 
   const [formData, setFormData] = useState({
     name: "",
@@ -46,17 +41,7 @@ export default function SignupPage() {
     setIsLoading(true)
 
     try {
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
-      })
-      if (!res.ok) {
-        const errorData = await res.json()
-        throw new Error(errorData.message || "Signup failed")
-      }
-      // Optionally handle success (e.g., redirect or show message)
-      console.log("Signup successful")
+      await signup(formData.name, formData.email, formData.password)
     } catch (error) {
       console.error("Signup failed:", error)
     } finally {

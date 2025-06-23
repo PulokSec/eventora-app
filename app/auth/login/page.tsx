@@ -20,18 +20,13 @@ export default function LoginPage() {
   const [errorMsg, setErrorMsg] = useState("")
   const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter()
-  const {user} = useAuth()
+  const {user,signin} = useAuth()
   
-    useEffect(() => {
-      if(user?.role){
-      if(user?.role === 'admin'){
-        router.push("/admin/dashboard")
-      }
-      else{
-        router.push("/user/dashboard")
-      }
+     useEffect(() => {
+    if (user?.role) {
+      router.push(user.role === 'admin' ? "/admin/dashboard" : "/user/dashboard")
     }
-    }, [user])
+  }, [user])
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -39,26 +34,15 @@ export default function LoginPage() {
     setErrorMsg("")
 
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      })
-      const data = await response.json()
-      setIsAdmin(data?.user?.role === 'admin' ? true : false)
-      localStorage?.setItem("event_auth_token", data?.token)
-      if (!response.ok) {
-        const errorData = await response.json()
-        setErrorMsg(errorData.message || "Login failed")
-        return
-      }
+      await signin(email, password)
+      isAdmin ? router.push("/admin/dashboard") : router.push("/user/dashboard")
+      router.refresh()
       
     } catch (error) {
       setErrorMsg("Login failed: " + (error instanceof Error ? error.message : "Unknown error"))
       console.error("Login failed:", error)
     } finally {
       setIsLoading(false)
-      isAdmin ? router.push("/admin/dashboard") : router.push("/user/dashboard")
     }
   }
 
