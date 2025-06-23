@@ -1,16 +1,15 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Users, Calendar, TrendingUp, Settings, Plus } from "lucide-react"
 import { AdminEventsList } from "@/components/admin/admin-events-list"
 import { UserManagement } from "@/components/admin/user-management"
-import { AdminStats } from "@/components/admin/admin-stats"
-import Link from "next/link"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAuth } from "@/lib/auth-context"
+import { Calendar, Plus, Settings, TrendingUp, Users } from "lucide-react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState({
@@ -140,7 +139,6 @@ export default function AdminDashboard() {
           <TabsList className="grid w-full grid-cols-3 gap-4">
             <TabsTrigger value="events">Events Management</TabsTrigger>
             <TabsTrigger value="users">User Management</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
 
           <TabsContent value="events">
@@ -149,10 +147,6 @@ export default function AdminDashboard() {
 
           <TabsContent value="users">
             <UserManagement />
-          </TabsContent>
-
-          <TabsContent value="analytics">
-            <AdminStats />
           </TabsContent>
         </Tabs>
       </div>

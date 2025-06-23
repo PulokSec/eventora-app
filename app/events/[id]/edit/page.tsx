@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Calendar, MapPin, Clock, ArrowLeft, Save } from "lucide-react"
+import { Calendar, MapPin, Clock, ArrowLeft, Save, AlertTriangle } from "lucide-react"
 import Link from "next/link"
 import { ImageUpload } from "@/components/image-upload"
 import { useToast } from "@/hooks/use-toast"
@@ -25,6 +25,19 @@ interface EventData {
   status: string
   banner?: string
   subscriberCount: number
+  createdBy: string
+  creator: {
+    _id: string
+    name: string
+    email: string
+  }
+}
+
+interface CurrentUser {
+  _id: string
+  role: string
+  name: string
+  email: string
 }
 
 export default function EditEventPage() {
@@ -34,6 +47,7 @@ export default function EditEventPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isFetching, setIsFetching] = useState(true)
   const [event, setEvent] = useState<EventData | null>(null)
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null)
   const [formData, setFormData] = useState({
     title: "",
     description: "",
@@ -46,13 +60,26 @@ export default function EditEventPage() {
 
   useEffect(() => {
     if (params.id) {
+      fetchCurrentUser()
       fetchEvent()
     }
   }, [params.id])
 
+  const fetchCurrentUser = async () => {
+    try {
+      const response = await fetch("/api/auth/me")
+      const data = await response.json()
+      if (data.success) {
+        setCurrentUser(data.user)
+      }
+    } catch (error) {
+      console.error("Failed to fetch current user:", error)
+    }
+  }
+
   const fetchEvent = async () => {
     try {
-      const response = await fetch(`/api/user/events/${params.id}`)
+      const response = await fetch(`/api/events/${params.id}`)
       const data = await response.json()
 
       if (data.success) {
@@ -72,7 +99,7 @@ export default function EditEventPage() {
           description: data.message,
           variant: "destructive",
         })
-        router.push("/user/dashboard")
+        router.push("/")
       }
     } catch (error) {
       toast({
@@ -80,18 +107,36 @@ export default function EditEventPage() {
         description: "Failed to load event details",
         variant: "destructive",
       })
-      router.push("/user/dashboard")
+      router.push("/")
     } finally {
       setIsFetching(false)
     }
   }
 
+  // Check if user can edit this event
+  const canEdit =
+    currentUser &&
+    event &&
+    (currentUser.role === "admin" || currentUser._id === event.createdBy || currentUser._id === event.creator._id)
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
+    if (!canEdit) {
+      toast({
+        title: "Access Denied",
+        description: "You don't have permission to edit this event",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsLoading(true)
 
     try {
-      const response = await fetch(`/api/user/events/${params.id}`, {
+      const apiUrl = currentUser?.role === "admin" ? `/api/admin/events/${params.id}` : `/api/user/events/${params.id}`
+
+      const response = await fetch(apiUrl, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
@@ -102,9 +147,15 @@ export default function EditEventPage() {
       if (data.success) {
         toast({
           title: "Success",
-          description: `Event updated successfully! ${data.data.notificationsCreated} subscribers were notified.`,
+          description: `Event updated successfully! ${data.data?.notificationsCreated ? `${data.data.notificationsCreated} subscribers were notified.` : ""}`,
         })
-        router.push("/user/dashboard")
+
+        // Redirect based on user role
+        if (currentUser?.role === "admin") {
+          router.push("/admin/dashboard")
+        } else {
+          router.push("/user/dashboard")
+        }
       } else {
         toast({
           title: "Error",
@@ -140,7 +191,7 @@ export default function EditEventPage() {
     )
   }
 
-  if (!event) {
+  if (!event || !currentUser) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 py-8">
         <div className="container mx-auto px-4 max-w-2xl">
@@ -148,7 +199,7 @@ export default function EditEventPage() {
             <CardContent className="p-6 text-center">
               <p className="text-slate-500">Event not found or access denied</p>
               <Button asChild className="mt-4">
-                <Link href="/user/dashboard">Back to Dashboard</Link>
+                <Link href="/">Back to Home</Link>
               </Button>
             </CardContent>
           </Card>
@@ -157,11 +208,37 @@ export default function EditEventPage() {
     )
   }
 
+  if (!canEdit) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 py-8">
+        <div className="container mx-auto px-4 max-w-2xl">
+          <Card className="border-red-200 bg-red-50">
+            <CardContent className="p-6 text-center">
+              <AlertTriangle className="w-12 h-12 text-red-600 mx-auto mb-4" />
+              <h2 className="text-xl font-bold text-red-800 mb-2">Access Denied</h2>
+              <p className="text-red-700 mb-4">You can only edit events that you created.</p>
+              <div className="flex gap-4 justify-center">
+                <Button variant="outline" asChild>
+                  <Link href="/">Back to Home</Link>
+                </Button>
+                <Button asChild>
+                  <Link href={`/events/${event._id}`}>View Event</Link>
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
+
+  const backUrl = currentUser.role === "admin" ? "/admin/dashboard" : "/user/dashboard"
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 py-8">
       <div className="container mx-auto px-4 max-w-2xl">
         <div className="mb-8">
-          <Link href="/user/dashboard" className="inline-flex items-center text-purple-600 hover:text-purple-700 mb-4">
+          <Link href={backUrl} className="inline-flex items-center text-purple-600 hover:text-purple-700 mb-4">
             <ArrowLeft className="w-4 h-4 mr-2" />
             Back to Dashboard
           </Link>
@@ -200,10 +277,10 @@ export default function EditEventPage() {
           <CardHeader>
             <CardTitle className="text-xl text-slate-900">Event Details</CardTitle>
             <CardDescription>
-              Update your event information. Subscribers will be notified of changes.
+              Update your event information.
               {event.subscriberCount > 0 && (
                 <span className="block mt-1 text-blue-600 font-medium">
-                  {event.subscriberCount} subscriber(s) will be notified
+                  {event.subscriberCount} subscriber(s) will be notified of changes
                 </span>
               )}
             </CardDescription>
@@ -341,7 +418,7 @@ export default function EditEventPage() {
                   asChild
                   disabled={isLoading}
                 >
-                  <Link href="/user/dashboard">Cancel</Link>
+                  <Link href={backUrl}>Cancel</Link>
                 </Button>
                 <Button
                   type="submit"

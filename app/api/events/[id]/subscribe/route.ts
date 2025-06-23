@@ -18,10 +18,19 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
     const { db } = await connectToDatabase()
 
-    // Check if event exists
+    // Check if event exists and is active
     const event = await db.collection("events").findOne({ _id: new ObjectId(eventId) })
     if (!event) {
       return NextResponse.json({ success: false, message: "Event not found" }, { status: 404 })
+    }
+
+    if (event.status !== "active") {
+      return NextResponse.json({ success: false, message: "Cannot subscribe to inactive events" }, { status: 400 })
+    }
+
+    // Check if user is trying to subscribe to their own event
+    if (event.createdBy.toString() === user._id!.toString()) {
+      return NextResponse.json({ success: false, message: "Cannot subscribe to your own event" }, { status: 400 })
     }
 
     // Check if already subscribed

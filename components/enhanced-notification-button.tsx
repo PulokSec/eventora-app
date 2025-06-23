@@ -9,12 +9,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 interface Notification {
   id: string
+  _id: string
   title: string
   message: string
   eventId: string
   eventTitle: string
   type: "status_change" | "event_update" | "new_subscriber" | "event_reminder"
-  status: "active" | "cancelled" | "completed" | "pending"
   timestamp: string
   read: boolean
 }
@@ -31,14 +31,21 @@ export function EnhancedNotificationButton({ userRole }: EnhancedNotificationBut
   const checkForUpdates = async () => {
     setIsChecking(true)
     try {
-      // Replace with your real API endpoint
-      const response = await fetch("/api/notifications?role=" + userRole)
-      if (!response.ok) throw new Error("Failed to fetch notifications")
-      const data = await response.json()
-      const newNotifications: Notification[] = Array.isArray(data) ? data : []
+      const response = await fetch("/api/notifications?unreadOnly=false")
+      if (response.ok) {
+        const data = await response.json()
+        console.log(data);
+        if (data.success) {
+          const newNotifications = data.notifications.filter(
+            (newNotif: Notification) => !notifications.some((existingNotif) => existingNotif.id === newNotif.id),
+          )
 
-      setNotifications((prev) => [...newNotifications, ...prev])
-      setUnreadCount((prev) => prev + newNotifications.length)
+          if (newNotifications.length > 0) {
+            setNotifications((prev) => [...newNotifications, ...prev])
+            setUnreadCount(data.unreadCount)
+          }
+        }
+      }
     } catch (error) {
       console.error("Failed to check updates:", error)
     } finally {
@@ -46,9 +53,21 @@ export function EnhancedNotificationButton({ userRole }: EnhancedNotificationBut
     }
   }
 
-  const markAsRead = (notificationId: string) => {
-    setNotifications((prev) => prev.map((notification) => (notification.id === notificationId ? { ...notification, read: true } : notification)))
-    setUnreadCount((prev) => Math.max(0, prev - 1))
+  const markAsRead = async (notificationId: string) => {
+    try {
+      const response = await fetch(`/api/notifications/${notificationId}/read`, {
+        method: "PATCH",
+      })
+
+      if (response.ok) {
+        setNotifications((prev) =>
+          prev.map((notif) => (notif.id === notificationId ? { ...notif, read: true } : notif)),
+        )
+        setUnreadCount((prev) => Math.max(0, prev - 1))
+      }
+    } catch (error) {
+      console.error("Failed to mark as read:", error)
+    }
   }
 
   const clearNotification = (notificationId: string) => {
@@ -56,24 +75,11 @@ export function EnhancedNotificationButton({ userRole }: EnhancedNotificationBut
     if (notification && !notification.read) {
       setUnreadCount((prev) => Math.max(0, prev - 1))
     }
-    setNotifications((prev) => prev.filter((notification) => notification.id !== notificationId))
+    setNotifications((prev) => prev.filter((notif) => notif.id !== notificationId))
   }
 
-  const getNotificationIcon = (type: Notification["type"], status?: Notification["status"]) => {
+  const getNotificationIcon = (type: Notification["type"]) => {
     switch (type) {
-      case "status_change":
-        switch (status) {
-          case "active":
-            return <CheckCircle className="w-4 h-4 text-green-600" />
-          case "cancelled":
-            return <XCircle className="w-4 h-4 text-red-600" />
-          case "completed":
-            return <CheckCircle className="w-4 h-4 text-blue-600" />
-          case "pending":
-            return <Clock className="w-4 h-4 text-yellow-600" />
-          default:
-            return <AlertCircle className="w-4 h-4 text-slate-600" />
-        }
       case "new_subscriber":
         return <Bell className="w-4 h-4 text-blue-600" />
       case "event_update":
@@ -85,39 +91,28 @@ export function EnhancedNotificationButton({ userRole }: EnhancedNotificationBut
     }
   }
 
-  const getStatusBadge = (status: Notification["status"]) => {
-    const statusConfig = {
-      active: "bg-green-100 text-green-800",
-      pending: "bg-yellow-100 text-yellow-800",
-      completed: "bg-blue-100 text-blue-800",
-      cancelled: "bg-red-100 text-red-800",
-    }
-
-    return (
-      <Badge className={`text-xs ${statusConfig[status]}`}>{status.charAt(0).toUpperCase() + status.slice(1)}</Badge>
-    )
-  }
 
   return (
     <div className="flex gap-2">
-  <Button
-    onClick={checkForUpdates}
-    disabled={isChecking}
-    className="h-12 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
-  >
-    {isChecking ? "Checking..." : "Check Updates"}
-  </Button>
-  <DropdownMenu>
-    <DropdownMenuTrigger asChild>
-      <Button variant="ghost" className="relative h-12 w-12 rounded-full p-0">
-        <Bell className="w-6 h-6" />
-        {unreadCount > 0 && (
-          <span className="absolute top-1 right-1 bg-red-600 text-white rounded-full text-xs px-1.5 py-0.5">
-            {unreadCount}
-          </span>
-        )}
+      <Button
+        onClick={checkForUpdates}
+        disabled={isChecking}
+        className="h-12 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
+      >
+        {isChecking ? "Checking..." : "Check Updates"}
       </Button>
-    </DropdownMenuTrigger>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" className="h-12 px-4 bg-white border-slate-200 hover:bg-slate-50 relative">
+            <Bell className="w-4 h-4" />
+            {unreadCount > 0 && (
+              <Badge className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center bg-red-500 text-white text-xs">
+                {unreadCount}
+              </Badge>
+            )}
+          </Button>
+        </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-96 p-0">
           <Card className="border-0 shadow-lg">
             <CardHeader className="pb-3">
@@ -142,18 +137,17 @@ export function EnhancedNotificationButton({ userRole }: EnhancedNotificationBut
                 <div className="max-h-96 overflow-y-auto">
                   {notifications.map((notification) => (
                     <div
-                      key={notification.id}
+                      key={notification._id}
                       className={`p-4 border-b border-slate-100 hover:bg-slate-50 ${
                         !notification.read ? "bg-blue-50" : ""
                       }`}
                     >
                       <div className="flex justify-between items-start gap-2">
                         <div className="flex gap-3 flex-1">
-                          <div className="mt-1">{getNotificationIcon(notification.type, notification.status)}</div>
+                          <div className="mt-1">{getNotificationIcon(notification.type)}</div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-1">
                               <h4 className="font-medium text-slate-900 text-sm">{notification.title}</h4>
-                              {notification.type === "status_change" && getStatusBadge(notification.status)}
                             </div>
                             <p className="text-slate-600 text-sm mb-1">{notification.message}</p>
                             <p className="text-slate-400 text-xs">
@@ -166,7 +160,7 @@ export function EnhancedNotificationButton({ userRole }: EnhancedNotificationBut
                             <Button
                               size="sm"
                               variant="ghost"
-                              onClick={() => markAsRead(notification.id)}
+                              onClick={() => markAsRead(notification._id)}
                               className="h-6 w-6 p-0 hover:bg-green-100"
                             >
                               <Check className="w-3 h-3 text-green-600" />
@@ -175,7 +169,7 @@ export function EnhancedNotificationButton({ userRole }: EnhancedNotificationBut
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => clearNotification(notification.id)}
+                            onClick={() => clearNotification(notification._id)}
                             className="h-6 w-6 p-0 hover:bg-red-100"
                           >
                             <X className="w-3 h-3 text-red-600" />

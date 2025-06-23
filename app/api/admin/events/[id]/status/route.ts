@@ -51,7 +51,7 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       return NextResponse.json({ success: false, message: "Failed to update event status" }, { status: 500 })
     }
 
-    // Create notifications for all subscribers
+    // Create notifications for all subscribers (not the creator unless they're subscribed)
     const subscribers = await db
       .collection("subscriptions")
       .find({ eventId: new ObjectId(eventId) })
@@ -73,9 +73,9 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       await db.collection("notifications").insertMany(notifications)
     }
 
-    // Also notify the event creator if they're not already in subscribers
-    const creatorSubscription = subscribers.find((sub) => sub.userId.toString() === existingEvent.createdBy.toString())
-    if (!creatorSubscription) {
+    // Notify the event creator separately (only if they're not already in subscribers)
+    const creatorIsSubscriber = subscribers.some((sub) => sub.userId.toString() === existingEvent.createdBy.toString())
+    if (!creatorIsSubscriber) {
       const creatorNotification: Omit<Notification, "_id"> = {
         userId: existingEvent.createdBy,
         title: "Your Event Status Updated",
@@ -97,7 +97,8 @@ export async function PATCH(request: NextRequest, { params }: { params: { id: st
       data: {
         eventId,
         status,
-        notificationsCreated: subscribers.length + (creatorSubscription ? 0 : 1),
+        subscribersNotified: subscribers.length,
+        creatorNotified: !creatorIsSubscriber,
       },
     })
   } catch (error) {

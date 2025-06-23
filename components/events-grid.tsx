@@ -7,7 +7,6 @@ import { Plus } from "lucide-react"
 import Link from "next/link"
 
 interface Event {
-  _id: string
   id: string
   title: string
   description: string
@@ -22,35 +21,51 @@ interface Event {
 export function EventsGrid() {
   const [events, setEvents] = useState<Event[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [currentUser, setCurrentUser] = useState<any>(null)
 
   useEffect(() => {
-    const fetchEvents = async () => {
+    const fetchData = async () => {
       try {
-        const res = await fetch("/api/events")
-        if (!res.ok) throw new Error("Failed to fetch events")
-      const data = await res.json()
-      setEvents(Array.isArray(data?.events) ? data?.events : [])
+        // Fetch current user
+        const userResponse = await fetch("/api/auth/me")
+        if (userResponse.ok) {
+          const userData = await userResponse.json()
+          setCurrentUser(userData.user)
+        }
+
+        // Fetch events with creator information
+        const eventsResponse = await fetch("/api/events")
+        if (eventsResponse.ok) {
+          const eventsData = await eventsResponse.json()
+          setEvents(eventsData.events || [])
+        }
       } catch (error) {
-        console.error("Failed to fetch events:", error)
+        console.error("Failed to fetch data:", error)
       } finally {
         setIsLoading(false)
       }
     }
 
-    fetchEvents()
+    fetchData()
   }, [])
 
   const handleSubscribe = async (eventId: string) => {
+    if (!currentUser) return
+
     try {
-      const res = await fetch(`/api/events/${eventId}/subscribe`, {
-        method: "POST",
+      const event = events.find((e) => e.id === eventId)
+      const isCurrentlySubscribed = event?.isSubscribed
+
+      const response = await fetch(`/api/events/${eventId}/subscribe`, {
+        method: isCurrentlySubscribed ? "DELETE" : "POST",
         headers: { "Content-Type": "application/json" },
       })
-      if (!res.ok) throw new Error("Failed to toggle subscription")
 
-      // Optionally, get updated event from response
-      const updatedEvent = await res.json()
-      setEvents(events.map((event) => (event.id === eventId ? updatedEvent : event)))
+      if (response.ok) {
+        setEvents(
+          events.map((event) => (event.id === eventId ? { ...event, isSubscribed: !event.isSubscribed } : event)),
+        )
+      }
     } catch (error) {
       console.error("Failed to toggle subscription:", error)
     }
@@ -75,20 +90,27 @@ export function EventsGrid() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-slate-900">Upcoming Events</h2>
-        <Button
-          asChild
-          className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
-        >
-          <Link href="/events/create">
-            <Plus className="w-4 h-4 mr-2" />
-            Create Event
-          </Link>
-        </Button>
+        {currentUser && (
+          <Button
+            asChild
+            className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+          >
+            <Link href="/events/create">
+              <Plus className="w-4 h-4 mr-2" />
+              Create Event
+            </Link>
+          </Button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {Array.isArray(events) && events?.map((event) => (
-          <EventCard key={event._id} event={event} onSubscribe={() => handleSubscribe(event._id)} />
+        {events.map((event) => (
+          <EventCard
+            key={event.id}
+            event={event}
+            currentUser={currentUser}
+            onSubscribe={() => handleSubscribe(event.id)}
+          />
         ))}
       </div>
     </div>

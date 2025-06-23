@@ -80,9 +80,9 @@ console.log(user);
                       Dashboard
                     </Link>
                       ) : (
-                        <Link href="/profile" className="cursor-pointer">
+                        <Link href="/user/dashboard" className="cursor-pointer">
                       <User className="mr-2 h-4 w-4" />
-                      Profile
+                      Dashboard
                     </Link>
                       )
                     }
